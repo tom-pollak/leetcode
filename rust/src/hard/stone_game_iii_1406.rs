@@ -52,7 +52,7 @@ impl ToString for Winner {
 impl Solution {
     fn minimax(stone_value: &[i32], cur_player: Player, scores: &HashMap<Player, i32>, best_scores: &mut HashMap<Player, HashMap<i32, i32>>, pos: &mut i32) -> Winner {
         if stone_value.is_empty() {
-            let head = scores.values().next().unwrap();
+            let head = scores.values().next().expect("There should always be two keys in scores: Alice and Bob");
             if scores.values().into_iter().all(|x| x == head) {
                 Winner::Tie
             } else {
