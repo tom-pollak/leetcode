@@ -8,4 +8,4 @@ edition = "2021"
 [dependencies]
 rand = "0.7.3"
 num-traits = "0.2.15"
-itertools = "0.10.5"
+# itertools = "1.10.5"
