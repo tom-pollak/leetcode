@@ -15,9 +15,9 @@ mod jobs {
 
     #[derive(PartialEq, Eq, Debug)]
     pub struct Jobs {
-        start_time: Vec<i32>,
-        end_time: Vec<i32>,
-        profit: Vec<i32>,
+        pub start_time: Vec<i32>,
+        pub end_time: Vec<i32>,
+        pub profit: Vec<i32>,
     }
 
     impl<'a> IntoIterator for &'a Jobs {
@@ -101,37 +101,22 @@ mod jobs {
     }
 
     impl<'a> Jobs {
-        pub fn new(
-            start_time: &'a mut Vec<i32>,
-            end_time: &'a mut Vec<i32>,
-            profit: &'a mut Vec<i32>,
-        ) -> Self {
-            assert!(
-                start_time.len() == end_time.len() && end_time.len() == profit.len(),
-                "Parameters must all be of the same length!"
-            );
-
-            let jobs = Jobs {
-                start_time: start_time.to_vec(),
-                end_time: end_time.to_vec(),
-                profit: profit.to_vec(),
-            };
-
-            // No start_time.is_sorted()
-            let mut sorted_start = start_time.clone();
-            sorted_start.sort();
-
-            if *start_time == sorted_start {
-                jobs
-            } else {
-                let mut iter: Vec<_> = jobs.into_iter().collect();
-                iter.sort_by_key(|k| k.0);
-                Jobs::from_iter(iter)
+        pub fn new() -> Self {
+            Jobs {
+                start_time: Vec::new(),
+                end_time: Vec::new(),
+                profit: Vec::new(),
             }
         }
 
-        pub fn get_jobs_from(&'a self, n: usize) -> Jobs {
-            Jobs::from_iter(self.into_iter().filter(|i| i.0 >= n as i32))
+        pub fn get_jobs_from(&'a self, n: i32) -> Jobs {
+            Jobs::from_iter(self.into_iter().filter(|i| i.0 >= n))
+        }
+    }
+
+    impl Default for Jobs {
+        fn default() -> Self {
+            Self::new()
         }
     }
 
@@ -141,11 +126,11 @@ mod jobs {
 
         #[test]
         fn test_iter() {
-            let s = &mut vec![1, 2, 3];
-            let e = &mut vec![1, 2, 3];
-            let p = &mut vec![1, 2, 3];
-
-            let j = Jobs::new(s, e, p);
+            let j = Jobs {
+                start_time: vec![1, 2, 3],
+                end_time: vec![1, 2, 3],
+                profit: vec![1, 2, 3],
+            };
             let mut iter = j.into_iter();
 
             assert_eq!(iter.next(), Some((1, 1, 1)));
@@ -154,30 +139,31 @@ mod jobs {
 
         #[test]
         fn test_get_jobs_after() {
-            let s = &mut vec![1, 2, 3];
-            let e = &mut vec![1, 2, 3];
-            let p = &mut vec![1, 2, 3];
-            let j = Jobs::new(s, e, p);
-            assert_eq!(
-                j.get_jobs_from(1),
-                Jobs::new(&mut vec![1, 2, 3], &mut vec![1, 2, 3], &mut vec![1, 2, 3])
-            );
+            let j = Jobs {
+                start_time: vec![1, 2, 3],
+                end_time: vec![1, 2, 3],
+                profit: vec![1, 2, 3],
+            };
+
+            assert_eq!(j.get_jobs_from(1), j);
             assert_eq!(
                 j.get_jobs_from(2),
-                Jobs::new(&mut vec![2, 3], &mut vec![2, 3], &mut vec![2, 3])
+                Jobs {
+                    start_time: vec![2, 3],
+                    end_time: vec![2, 3],
+                    profit: vec![2, 3],
+                }
             );
             assert_eq!(
                 j.get_jobs_from(3),
-                Jobs::new(&mut vec![3], &mut vec![3], &mut vec![3])
+                Jobs {
+                    start_time: vec![3],
+                    end_time: vec![3],
+                    profit: vec![3],
+                }
             );
-            assert_eq!(
-                j.get_jobs_from(4),
-                Jobs::new(&mut vec![], &mut vec![], &mut vec![])
-            );
-            assert_eq!(
-                j.get_jobs_from(5),
-                Jobs::new(&mut vec![], &mut vec![], &mut vec![])
-            );
+            assert_eq!(j.get_jobs_from(4), Jobs::new());
+            assert_eq!(j.get_jobs_from(5), Jobs::new());
         }
     }
 }
@@ -188,35 +174,59 @@ use jobs::Jobs;
 
 impl Solution {
     #[allow(dead_code)]
-    pub fn job_scheduling(
-        mut start_time: Vec<i32>,
-        mut end_time: Vec<i32>,
-        mut profit: Vec<i32>,
-    ) -> i32 {
+    pub fn job_scheduling(start_time: Vec<i32>, end_time: Vec<i32>, profit: Vec<i32>) -> i32 {
+        assert!(
+            start_time.len() == end_time.len() && end_time.len() == profit.len(),
+            "Parameters must all be of the same length!"
+        );
+
+        let jobs_is_sorted = Solution::is_sorted(&start_time);
+
+        let mut jobs = Jobs {
+            start_time,
+            end_time,
+            profit,
+        };
+
+        if !jobs_is_sorted {
+            let mut iter: Vec<_> = jobs.into_iter().collect();
+            iter.sort_by_key(|k| k.0);
+            jobs = Jobs::from_iter(iter);
+        }
+
         let mut best_profit: HashMap<i32, i32> = HashMap::new();
-        let jobs = Jobs::new(&mut start_time, &mut end_time, &mut profit);
-        Solution::calc_jobs(&jobs, &mut best_profit, 0, 0);
+        Solution::calc_jobs(&jobs, &mut best_profit, 0);
         best_profit
-            .to_owned()
             .into_values()
-            .into_iter()
             .max()
             .expect("Should be at least one job")
-            .to_owned()
     }
 
-    fn calc_jobs(jobs: &Jobs, best_profit: &mut HashMap<i32, i32>, cur_profit: i32, depth: usize) {
+    fn calc_jobs(jobs: &Jobs, best_profit: &mut HashMap<i32, i32>, cur_profit: i32) {
         for (_s, e, p) in jobs.into_iter() {
             let new_p = cur_profit + p;
-            let x = best_profit.entry(e).or_insert(new_p);
-            *x = std::cmp::max(*x, new_p);
-            Solution::calc_jobs(
-                &jobs.get_jobs_from(e as usize),
-                best_profit,
-                new_p,
-                depth + 1,
-            );
+            let is_best = !best_profit.iter().any(|(&k, &v)| k <= e && v > new_p);
+            if is_best {
+                best_profit
+                    .entry(e)
+                    .and_modify(|entry| *entry = new_p)
+                    .or_insert(new_p);
+                Solution::calc_jobs(&jobs.get_jobs_from(e), best_profit, new_p);
+            }
         }
+    }
+
+    fn is_sorted<T: Ord>(list: &[T]) -> bool {
+        if list.is_empty() {
+            return true;
+        }
+        let prev = &list[0];
+        for i in list.iter() {
+            if i < prev {
+                return false;
+            }
+        }
+        true
     }
 }
 
