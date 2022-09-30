@@ -57,21 +57,6 @@ mod jobs {
         }
     }
 
-    // use itertools::Itertools; // Not in leetcode
-    trait FindPosition: Iterator {
-        fn find_position<P>(&mut self, mut pred: P) -> Option<(usize, Self::Item)>
-        where
-            P: FnMut(&Self::Item) -> bool,
-        {
-            for (index, elt) in self.enumerate() {
-                if pred(&elt) {
-                    return Some((index, elt));
-                }
-            }
-            None
-        }
-    }
-
     impl FromIterator<(i32, i32, i32)> for Jobs {
         fn from_iter<T: IntoIterator<Item = (i32, i32, i32)>>(iter: T) -> Jobs {
             let mut start_time = Vec::new();
@@ -91,8 +76,6 @@ mod jobs {
             }
         }
     }
-
-    impl<'a> FindPosition for JobsIntoIterator<'a> {}
 
     impl<'a> ExactSizeIterator for JobsIntoIterator<'a> {
         fn len(&self) -> usize {
@@ -205,11 +188,11 @@ impl Solution {
     fn calc_jobs(jobs: &Jobs, best_profit: &mut HashMap<i32, i32>, cur_profit: i32) {
         for (_s, e, p) in jobs.into_iter() {
             let new_p = cur_profit + p;
-            let is_best = !best_profit.iter().any(|(&k, &v)| k <= e && v > new_p);
+            let is_best = !best_profit.iter().any(|(&k, &v)| k <= e && v >= new_p);
             if is_best {
                 best_profit
                     .entry(e)
-                    .and_modify(|entry| *entry = new_p)
+                    .and_modify(|val| *val = new_p)
                     .or_insert(new_p);
                 Solution::calc_jobs(&jobs.get_jobs_from(e), best_profit, new_p);
             }
@@ -220,11 +203,12 @@ impl Solution {
         if list.is_empty() {
             return true;
         }
-        let prev = &list[0];
+        let mut prev = &list[0];
         for i in list.iter() {
             if i < prev {
                 return false;
             }
+            prev = i;
         }
         true
     }
@@ -243,9 +227,6 @@ mod tests {
             120
         );
 
-        // 1 -> 3,  4 -> 6,  6 -> 9,
-        // It can't pick up the 6 at the same time
-        // [None, None, None, 20, None, 90, None, None, 150]
         assert_eq!(
             Solution::job_scheduling(
                 vec![1, 2, 3, 4, 6],
@@ -268,5 +249,11 @@ mod tests {
             ),
             18
         );
+    }
+
+    #[test]
+    fn test_sorted() {
+        assert!(Solution::is_sorted(vec![1, 2, 3].as_slice()));
+        assert!(!Solution::is_sorted(vec![5, 1, 2, 3].as_slice()));
     }
 }
