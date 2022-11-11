@@ -1,6 +1,8 @@
-pub mod easy;
-pub mod medium;
-pub mod hard;
+#![feature(int_roundings)]
+mod easy;
+mod medium;
+mod hard;
+mod array_traits;
 
 fn main() {
 }

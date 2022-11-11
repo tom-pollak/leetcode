@@ -4,23 +4,23 @@
  * [446] Arithmetic Slices II - Subsequence
  */
 
+use std::collections::HashSet;
+
 struct Solution;
 
+// New question plx
 // @lc code=start
 impl Solution {
-    fn make_combinations(nums: &[i32], len: usize) -> Vec<Vec<i32>> {
-        if len == 1 {
-            return nums.iter().map(|&n| vec![n]).collect();
-        }
-
-        let mut combs: Vec<Vec<i32>> = Vec::new();
-        for (i, &n) in nums.iter().enumerate() {
-            Solution::make_combinations(&nums[i + 1..], len - 1)
-                .iter_mut()
-                .for_each(|v| {
-                    v.insert(0, n);
-                    combs.push(v.to_owned())
-                });
+    fn make_combinations(nums: Vec<i32>, min_len: usize) -> HashSet<Vec<i32>> {
+        // let mut combs: Vec<Vec<i32>> = Vec::new();
+        let mut combs: HashSet<Vec<i32>> = HashSet::new();
+        if nums.len() >= min_len {
+            for (i, &_n) in nums.iter().enumerate() {
+                let mut new_nums = nums.clone();
+                new_nums.remove(i);
+                combs.extend(Solution::make_combinations(new_nums, min_len));
+            }
+            combs.insert(nums);
         }
         combs
     }
@@ -48,12 +48,15 @@ impl Solution {
     #[allow(dead_code)]
     pub fn number_of_arithmetic_slices(nums: Vec<i32>) -> i32 {
         let mut count = 0;
-        let perms = Solution::make_combinations(&nums, 3);
-        for p in perms {
+        let combs = Solution::make_combinations(nums, 3);
+        let mut arithm_combs = Vec::new();
+        for p in combs {
             if Solution::is_arithmetic_seq(&p) {
-                count += 1
+                count += 1;
+                arithm_combs.push(p);
             }
         }
+        println!("{:?}", arithm_combs);
         count
     }
 }

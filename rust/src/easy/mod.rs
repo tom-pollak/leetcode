@@ -1,2 +1,3 @@
 pub mod remove_duplicates_from_sorted_array_26;
 mod x_of_a_kind_in_a_deck_of_cards_914;
+mod thousand_separator_1556;
